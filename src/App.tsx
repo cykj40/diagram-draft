@@ -10,6 +10,7 @@ import { useAgentChat } from "@cloudflare/ai-chat/react";
 import Canvas from "./components/Canvas";
 import ChatPanel from "./components/chat/ChatPanel";
 import { serializeCanvasState } from "./context/canvas-state";
+import { normalizeElementSkeletons } from "./excalidraw/normalize-skeleton";
 import "./App.css";
 
 // One agent instance per page load. The canvas state lives only in the
@@ -41,23 +42,31 @@ export default function App() {
 
   const agent = useAgent({ agent: "design-agent", name: sessionId });
 
-  // useAgentChat manages the chat protocol on top of the agent connection.
-  // We register an onToolCall handler to fulfill the queryCanvas client tool:
-  // when the agent calls queryCanvas, the worker streams the call here, we
-  // read the live scene, and submit the result back. The agent loop resumes
-  // automatically (autoContinueAfterToolResult is true by default).
-  const { messages, sendMessage, status } = useAgentChat({
+  // useAgentChat's onToolCall `addToolOutput` resumes the stream before
+  // addToolResult finishes, which races AI SDK's activeResponse and throws.
+  // The hook's `addToolResult` sends the output then resumes in the right order.
+  const addToolResultRef = useRef<
+    (args: {
+      tool: string;
+      toolCallId: string;
+      output: unknown;
+    }) => void | PromiseLike<void>
+  >(() => {});
+
+  const { messages, sendMessage, status, addToolResult } = useAgentChat({
     agent,
-    onToolCall: async ({ toolCall, addToolOutput }) => {
+    onToolCall: async ({ toolCall }) => {
       if (toolCall.toolName !== "queryCanvas") return;
       const api = excalidrawAPIRef.current;
       const elements = api?.getSceneElements() ?? [];
-      addToolOutput({
+      await addToolResultRef.current({
+        tool: toolCall.toolName,
         toolCallId: toolCall.toolCallId,
         output: { summary: serializeCanvasState(elements as unknown[]) },
       });
     },
   });
+  addToolResultRef.current = addToolResult;
 
   // Watch messages for the three mutating server tools and apply them to the
   // live canvas. The worker side just relays intent — actual scene mutation
@@ -93,9 +102,10 @@ export default function App() {
             // Convert skeletons into full Excalidraw elements. regenerateIds
             // false so the agent's chosen ids survive — otherwise later
             // updateElements/removeElements calls (which use those ids) miss.
-            const newOnes = convertToExcalidrawElements(skeletons as never, {
-              regenerateIds: false,
-            });
+            const newOnes = convertToExcalidrawElements(
+              normalizeElementSkeletons(skeletons) as never,
+              { regenerateIds: false }
+            );
             const current = excalidrawAPI.getSceneElements();
             const next = [...current, ...newOnes];
             excalidrawAPI.updateScene({

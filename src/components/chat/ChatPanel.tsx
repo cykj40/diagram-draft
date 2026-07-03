@@ -31,7 +31,7 @@ export default function ChatPanel({
   return (
     <div className="chat-panel">
       <div className="chat-header">
-        <h2>Chat</h2>
+        <h2>DiagramDraft</h2>
       </div>
       <MessageList messages={messages} />
       <form className="chat-input-form" onSubmit={handleSubmit}>
