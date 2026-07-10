@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import {
   convertToExcalidrawElements,
@@ -67,6 +67,20 @@ export default function App() {
     },
   });
   addToolResultRef.current = addToolResult;
+
+  const sendWithCanvas = useMemo(
+    () => (msg: { role: "user"; parts: { type: "text"; text: string }[] }) => {
+      const elements = excalidrawAPIRef.current?.getSceneElements() ?? [];
+      sendMessage({
+        ...msg,
+        parts: [
+          ...msg.parts,
+          { type: "data-canvas-state", data: { elements } } as never,
+        ],
+      });
+    },
+    [sendMessage]
+  );
 
   // Watch messages for the three mutating server tools and apply them to the
   // live canvas. The worker side just relays intent — actual scene mutation
@@ -154,7 +168,7 @@ export default function App() {
       </div>
       <ChatPanel
         messages={messages}
-        sendMessage={sendMessage}
+        sendMessage={sendWithCanvas}
         status={status}
       />
       <a href="#viewer" className="viewer-launch" title="Open diagram viewer for human scoring">

@@ -21,6 +21,9 @@ export { SYSTEM_PROMPT } from "./system-prompt";
 interface AgentArgs {
   model: LanguageModel;
   messages: ModelMessage[];
+  // Canvas elements from the latest user message. Serialized into the system
+  // prompt so the agent knows what already exists before it acts.
+  canvasState?: unknown[];
   // Eval-only: the simulated initial canvas. The worker doesn't pass this —
   // in production the live browser canvas is the source of truth, fetched on
   // demand via the queryCanvas client tool. The eval has no browser, so it
@@ -36,17 +39,22 @@ interface AgentArgs {
   };
 }
 
+function buildSystem(base: string, canvasState: unknown[] | undefined): string {
+  return `${base}\n\n# Current canvas state\n\n${serializeCanvasState(canvasState ?? [])}`;
+}
+
 // Streaming variant. Used by the worker for the live chat experience.
 export function streamAgent({
   model,
   messages,
+  canvasState,
   system = SYSTEM_PROMPT,
   maxSteps = 8,
   env = {},
 }: AgentArgs) {
   return streamText({
     model,
-    system,
+    system: buildSystem(system, canvasState),
     messages,
     tools: buildTools(env),
     stopWhen: stepCountIs(maxSteps),
@@ -126,7 +134,7 @@ export async function runAgent({
 
   const result = await generateText({
     model,
-    system,
+    system: buildSystem(system, seedCanvas),
     messages,
     tools: evalTools,
     stopWhen: stepCountIs(maxSteps),
