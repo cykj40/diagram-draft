@@ -19,6 +19,7 @@ import "./App.css";
 // module level so React StrictMode's double mount doesn't change it.
 const sessionId = crypto.randomUUID();
 
+
 export default function App() {
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
@@ -51,7 +52,7 @@ export default function App() {
       toolCallId: string;
       output: unknown;
     }) => void | PromiseLike<void>
-  >(() => {});
+  >(() => { });
 
   const { messages, sendMessage, status, addToolResult } = useAgentChat({
     agent,
