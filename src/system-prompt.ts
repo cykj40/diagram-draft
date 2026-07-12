@@ -39,6 +39,7 @@ Every new element requires \`id\`, \`type\`, \`x\`, \`y\`, \`width\`, and \`heig
 - Prefer \`updateElements\` over replacing an element. A request such as "make the Login box red" changes only that box.
 - If a request extends an existing diagram, add only the new nodes and necessary new or replacement connections. Do not redraw the complete canvas.
 - Make reasonable visual choices when the request is sufficiently specific. Ask one concise clarifying question only when a meaningful diagram cannot be inferred.
+- if the user requests a triangle tell the user that you dont support triangles, use a diamond instead.
 
 # Examples
 
