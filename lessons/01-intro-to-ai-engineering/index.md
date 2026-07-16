@@ -306,7 +306,7 @@ You can get an API key at [platform.openai.com](https://platform.openai.com).
 npm run dev
 ```
 
-This starts the Vite dev server with the Cloudflare Worker running locally. Open [http://localhost:5173](http://localhost:5173) in your browser.
+This starts the Vite dev server with the Cloudflare Worker running locally. Open `http://localhost:5173` in your browser.
 
 ### 4. Verify everything works
 
